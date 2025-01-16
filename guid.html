@@ -1,0 +1,52 @@
+<html>
+
+<script>
+	function getguid(){
+	
+		var rawbytes = document.getElementById('rawbyte').value.toUpperCase();
+		var allowedchars = /[^A-F0-9]/;
+		var html = '<b>ID / GUID: </b><br/>';
+		var lines = rawbytes.split('\n');
+		
+		for(var i = 0;i < lines.length;i++) {
+		
+			var rawbyte = lines[i];
+			var bytelength = rawbyte.length;
+			
+			if(bytelength == 32 || bytelength == 33) {
+				rawbyte = rawbyte.substring(0,32);
+				
+				if (!allowedchars.test(rawbyte)) {
+					html += '{'+rawbyte.substring(6,8)+rawbyte.substring(4,6)+rawbyte.substring(2,4)+rawbyte.substring(0,2)+'-'+rawbyte.substring(10,12)+rawbyte.substring(8,10)+'-'+rawbyte.substring(14,16)+rawbyte.substring(12,14)+'-'+rawbyte.substring(16,20)+'-'+rawbyte.substring(20,32)+ '}<br/>';
+				} else {
+					html += '***Not a valid input, input has to be a hexadecimal value of 32/38 char length***<br/>';
+				}
+			}
+			
+			else if(bytelength == 38 || bytelength == 39) {
+				rawbyte = rawbyte.replace(/-/g,'').replace(/{/,'').replace(/}/,'').substring(0,32);
+				
+				if (!allowedchars.test(rawbyte)) {
+					html += rawbyte.substring(6,8)+rawbyte.substring(4,6)+rawbyte.substring(2,4)+rawbyte.substring(0,2)+rawbyte.substring(10,12)+rawbyte.substring(8,10)+rawbyte.substring(14,16)+rawbyte.substring(12,14)+rawbyte.substring(16,20)+rawbyte.substring(20,32)+ '<br/>';
+				} else {
+					html += '***Not a valid input, input has to be a hexadecimal value of 32/38 char length***<br/>';
+				}
+			}
+			
+			else {
+				html += '***Not a valid input, input has to be a hexadecimal value of 32/38 char length***<br/>';
+			}
+		}
+		
+		document.getElementById('guid').innerHTML = html;
+	}
+</script>
+
+<body>
+<b>INFO: Enter the Oracle/DB2 ID / GUID value [One ID per line]</b>
+<br/>
+<textarea rows="10" cols="50" id='rawbyte'></textarea>
+<input type='button' onClick='getguid()' value='Get GUID'>
+<div id='guid'><b>ID <=> GUID: </b></div>
+</body>
+</html>
