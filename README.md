@@ -1,2 +1,2 @@
 # guid
-BUID converter
+GUID converter
