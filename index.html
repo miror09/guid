@@ -1,52 +1,343 @@
-<html>
-
-<script>
-	function getguid(){
-	
-		var rawbytes = document.getElementById('rawbyte').value.toUpperCase();
-		var allowedchars = /[^A-F0-9]/;
-		var html = '<b>ID / GUID: </b><br/>';
-		var lines = rawbytes.split('\n');
-		
-		for(var i = 0;i < lines.length;i++) {
-		
-			var rawbyte = lines[i];
-			var bytelength = rawbyte.length;
-			
-			if(bytelength == 32 || bytelength == 33) {
-				rawbyte = rawbyte.substring(0,32);
-				
-				if (!allowedchars.test(rawbyte)) {
-					html += '{'+rawbyte.substring(6,8)+rawbyte.substring(4,6)+rawbyte.substring(2,4)+rawbyte.substring(0,2)+'-'+rawbyte.substring(10,12)+rawbyte.substring(8,10)+'-'+rawbyte.substring(14,16)+rawbyte.substring(12,14)+'-'+rawbyte.substring(16,20)+'-'+rawbyte.substring(20,32)+ '}<br/>';
-				} else {
-					html += '***Not a valid input, input has to be a hexadecimal value of 32/38 char length***<br/>';
-				}
-			}
-			
-			else if(bytelength == 38 || bytelength == 39) {
-				rawbyte = rawbyte.replace(/-/g,'').replace(/{/,'').replace(/}/,'').substring(0,32);
-				
-				if (!allowedchars.test(rawbyte)) {
-					html += rawbyte.substring(6,8)+rawbyte.substring(4,6)+rawbyte.substring(2,4)+rawbyte.substring(0,2)+rawbyte.substring(10,12)+rawbyte.substring(8,10)+rawbyte.substring(14,16)+rawbyte.substring(12,14)+rawbyte.substring(16,20)+rawbyte.substring(20,32)+ '<br/>';
-				} else {
-					html += '***Not a valid input, input has to be a hexadecimal value of 32/38 char length***<br/>';
-				}
-			}
-			
-			else {
-				html += '***Not a valid input, input has to be a hexadecimal value of 32/38 char length***<br/>';
-			}
-		}
-		
-		document.getElementById('guid').innerHTML = html;
-	}
-</script>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GUID Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            line-height: 1.5;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #111827;
+        }
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-family: ui-monospace, monospace;
+            font-size: 0.875rem;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        button, .file-upload {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        button:hover, .file-upload:hover {
+            background-color: #2563eb;
+        }
+        button.secondary {
+            background-color: #10b981;
+        }
+        button.secondary:hover {
+            background-color: #059669;
+        }
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .file-upload {
+            background-color: #6366f1;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .file-upload:hover {
+            background-color: #4f46e5;
+        }
+        .file-upload input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        #guid {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 0.375rem;
+            font-family: ui-monospace, monospace;
+            font-size: 0.875rem;
+        }
+        .error {
+            color: #dc2626;
+            font-size: 0.875rem;
+        }
+        .result-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .drag-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+            transition: all 0.3s ease;
+        }
+        .drag-area.dragover {
+            background-color: #e0e7ff;
+            border-color: #6366f1;
+        }
+        .file-info {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        .current-file {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .current-file button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            background-color: #ef4444;
+        }
+        .current-file button:hover {
+            background-color: #dc2626;
+        }
+    </style>
+</head>
 <body>
-<b>INFO: Enter the Oracle/DB2 ID / GUID value [One ID per line]</b>
-<br/>
-<textarea rows="10" cols="50" id='rawbyte'></textarea>
-<input type='button' onClick='getguid()' value='Get GUID'>
-<div id='guid'><b>ID <=> GUID: </b></div>
+    <div class="container">
+        <h1 class="title">Oracle/DB2 GUID Converter</h1>
+        
+        <div class="drag-area" id="dropZone">
+            Drag and drop a file here or click to upload
+            <div class="file-info">Accepts .txt files</div>
+        </div>
+        <div id="currentFile" class="current-file"></div>
+
+        <div>
+            <label for="rawbyte" class="block mb-2">Or enter the ID / GUID values (one per line):</label>
+            <textarea 
+                rows="10" 
+                id="rawbyte" 
+                placeholder="Enter 32 or 38 character hexadecimal values..."
+                spellcheck="false"
+            ></textarea>
+        </div>
+        
+        <div class="button-container">
+            <label class="file-upload">
+                Upload File
+                <input type="file" id="fileInput" accept=".txt">
+            </label>
+            <button onclick="getguid()">Convert GUID</button>
+            <button id="downloadBtn" class="secondary" onclick="downloadCSV()" disabled>
+                Download CSV
+            </button>
+        </div>
+        
+        <div id="guid">
+            <div class="text-sm font-semibold mb-2">Converted GUIDs will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        let convertedGuids = [];
+        let fileContent = '';
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const textarea = document.getElementById('rawbyte');
+
+        // File upload handling
+        function handleFile(file) {
+            if (file && file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    fileContent = e.target.result;
+                    document.getElementById('currentFile').innerHTML = `
+                        <span>File loaded: ${file.name}</span>
+                        <button onclick="clearFile()">Clear</button>
+                    `;
+                    // Auto-convert after loading
+                    getguid();
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Please upload a text file (.txt)');
+            }
+        }
+
+        function clearFile() {
+            fileContent = '';
+            document.getElementById('currentFile').innerHTML = '';
+            document.getElementById('guid').innerHTML = '<div class="text-sm font-semibold mb-2">Converted GUIDs will appear here...</div>';
+            document.getElementById('downloadBtn').disabled = true;
+        }
+
+        // File input change handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+            e.target.value = ''; // Reset file input
+        });
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Click to upload
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        function getguid() {
+            // Combine file content and textarea content
+            const manualInput = document.getElementById('rawbyte').value;
+            const inputText = fileContent + (fileContent && manualInput ? '\n' : '') + manualInput;
+            const rawbytes = inputText.toUpperCase();
+            const allowedchars = /[^A-F0-9]/;
+            let html = '<div class="text-sm font-semibold mb-2">Converted Results:</div>';
+            const lines = rawbytes.split('\n').filter(line => line.trim());
+            
+            // Reset converted GUIDs array
+            convertedGuids = [];
+            
+            if (lines.length === 0) {
+                document.getElementById('guid').innerHTML = 
+                    '<div class="error">Please enter at least one valid GUID value.</div>';
+                document.getElementById('downloadBtn').disabled = true;
+                return;
+            }
+
+            lines.forEach(rawbyte => {
+                let bytelength = rawbyte.length;
+                let resultClass = 'result-item';
+                let convertedGuid = '';
+                
+                if (bytelength === 32 || bytelength === 33) {
+                    rawbyte = rawbyte.substring(0, 32);
+                    
+                    if (!allowedchars.test(rawbyte)) {
+                        convertedGuid = `{${
+                            rawbyte.substring(6,8) + rawbyte.substring(4,6) + 
+                            rawbyte.substring(2,4) + rawbyte.substring(0,2)}-${
+                            rawbyte.substring(10,12) + rawbyte.substring(8,10)}-${
+                            rawbyte.substring(14,16) + rawbyte.substring(12,14)}-${
+                            rawbyte.substring(16,20)}-${
+                            rawbyte.substring(20,32)}}`;
+                        html += `<div class="${resultClass}">${convertedGuid}</div>`;
+                        convertedGuids.push({
+                            original: rawbyte,
+                            converted: convertedGuid
+                        });
+                    } else {
+                        html += `<div class="${resultClass} error">Invalid input: Must be hexadecimal value</div>`;
+                    }
+                }
+                else if (bytelength === 38 || bytelength === 39) {
+                    rawbyte = rawbyte.replace(/-/g,'').replace(/{/,'').replace(/}/,'').substring(0,32);
+                    
+                    if (!allowedchars.test(rawbyte)) {
+                        convertedGuid = rawbyte.substring(6,8) + rawbyte.substring(4,6) + 
+                            rawbyte.substring(2,4) + rawbyte.substring(0,2) + 
+                            rawbyte.substring(10,12) + rawbyte.substring(8,10) + 
+                            rawbyte.substring(14,16) + rawbyte.substring(12,14) + 
+                            rawbyte.substring(16,20) + rawbyte.substring(20,32);
+                        html += `<div class="${resultClass}">${convertedGuid}</div>`;
+                        convertedGuids.push({
+                            original: rawbyte,
+                            converted: convertedGuid
+                        });
+                    } else {
+                        html += `<div class="${resultClass} error">Invalid input: Must be hexadecimal value</div>`;
+                    }
+                }
+                else {
+                    html += `<div class="${resultClass} error">Invalid input: Must be 32 or 38 characters long</div>`;
+                }
+            });
+            
+            document.getElementById('guid').innerHTML = html;
+            document.getElementById('downloadBtn').disabled = convertedGuids.length === 0;
+        }
+
+        function downloadCSV() {
+            if (convertedGuids.length === 0) return;
+
+            // Create CSV content
+            const csvContent = [
+                ['Original GUID', 'Converted GUID'],
+                ...convertedGuids.map(guid => [guid.original, guid.converted])
+            ].map(row => row.join(',')).join('\n');
+
+            // Create blob and download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'converted_guids.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </body>
 </html>
