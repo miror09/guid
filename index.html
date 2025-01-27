@@ -70,6 +70,12 @@
         button.secondary:hover {
             background-color: #059669;
         }
+        button.tertiary {
+            background-color: #8b5cf6;
+        }
+        button.tertiary:hover {
+            background-color: #7c3aed;
+        }
         button:disabled {
             background-color: #9ca3af;
             cursor: not-allowed;
@@ -145,6 +151,30 @@
         .current-file button:hover {
             background-color: #dc2626;
         }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        /* The footer styles */
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -176,6 +206,9 @@
             <button id="downloadBtn" class="secondary" onclick="downloadCSV()" disabled>
                 Download CSV
             </button>
+            <button id="copyBtn" class="tertiary" onclick="copyToClipboard()" disabled>
+                Copy Results
+            </button>
         </div>
         
         <div id="guid">
@@ -183,14 +216,22 @@
         </div>
     </div>
 
+    <!-- New footer -->
+    <footer class="footer">
+        © 2025 GUID Converter. All rights reserved.
+    </footer>
+
+    <div id="toast" class="toast">Copied to clipboard!</div>
+
     <script>
         let convertedGuids = [];
         let fileContent = '';
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const textarea = document.getElementById('rawbyte');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toast');
 
-        // File upload handling
         function handleFile(file) {
             if (file && file.type === 'text/plain') {
                 const reader = new FileReader();
@@ -214,16 +255,15 @@
             document.getElementById('currentFile').innerHTML = '';
             document.getElementById('guid').innerHTML = '<div class="text-sm font-semibold mb-2">Converted GUIDs will appear here...</div>';
             document.getElementById('downloadBtn').disabled = true;
+            copyBtn.disabled = true;
         }
 
-        // File input change handler
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) handleFile(file);
-            e.target.value = ''; // Reset file input
+            e.target.value = '';
         });
 
-        // Drag and drop handlers
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -240,13 +280,11 @@
             if (file) handleFile(file);
         });
 
-        // Click to upload
         dropZone.addEventListener('click', () => {
             fileInput.click();
         });
 
         function getguid() {
-            // Combine file content and textarea content
             const manualInput = document.getElementById('rawbyte').value;
             const inputText = fileContent + (fileContent && manualInput ? '\n' : '') + manualInput;
             const rawbytes = inputText.toUpperCase();
@@ -254,13 +292,13 @@
             let html = '<div class="text-sm font-semibold mb-2">Converted Results:</div>';
             const lines = rawbytes.split('\n').filter(line => line.trim());
             
-            // Reset converted GUIDs array
             convertedGuids = [];
             
             if (lines.length === 0) {
                 document.getElementById('guid').innerHTML = 
                     '<div class="error">Please enter at least one valid GUID value.</div>';
                 document.getElementById('downloadBtn').disabled = true;
+                copyBtn.disabled = true;
                 return;
             }
 
@@ -314,18 +352,17 @@
             
             document.getElementById('guid').innerHTML = html;
             document.getElementById('downloadBtn').disabled = convertedGuids.length === 0;
+            copyBtn.disabled = convertedGuids.length === 0;
         }
 
         function downloadCSV() {
             if (convertedGuids.length === 0) return;
 
-            // Create CSV content
             const csvContent = [
                 ['Original GUID', 'Converted GUID'],
                 ...convertedGuids.map(guid => [guid.original, guid.converted])
             ].map(row => row.join(',')).join('\n');
 
-            // Create blob and download link
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
@@ -337,6 +374,28 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        async function copyToClipboard() {
+            if (convertedGuids.length === 0) return;
+
+            const textToCopy = convertedGuids
+                .map(guid => guid.converted)
+                .join('\n');
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                showToast();
+            } catch (err) {
+                alert('Failed to copy to clipboard');
+            }
+        }
+
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
         }
     </script>
 </body>
